@@ -20,6 +20,7 @@ import {
   attachDiagramReader,
   MIND_MAP_CONNECTOR_NAME,
   mindMapConnector,
+  diagramFallbackMarkdown,
   docToMarkdown,
   NativeAttachmentMetadata,
   prepareNativeEditorContent,
@@ -1451,10 +1452,8 @@ const api: EdgeEverEditorAPI = {
     suppressChange = true;
     const diagram = mode === "viewer" ? parseDiagramDocument(md) : null;
     viewerDiagram = diagram;
-    // Valid IR is drawn by read-only X6. Do not inject a hidden Mermaid
-    // document into TipTap; invalid envelopes keep the stripped fence.
     const displayMarkdown = mode === "viewer"
-      ? (diagram ? "" : stripDiagramDocumentMarker(md))
+      ? (diagram ? diagramFallbackMarkdown(diagram) : stripDiagramDocumentMarker(md))
       : md;
     try {
       editor.commands.setContent(displayMarkdown || "", { contentType: "markdown" } as never);

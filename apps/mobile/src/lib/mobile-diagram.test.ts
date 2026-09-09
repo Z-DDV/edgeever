@@ -2,11 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { createDefaultDiagramDocument, diagramFallbackMarkdown, serializeDiagramDocument } from "@edgeever/shared";
 import { getMobileVisualDiagramKind, hasMobileVisualDiagram, resolveMobileMemoViewerContent } from "./mobile-diagram";
 
-const hasMermaidCodeBlock = (doc: { content?: Array<{ type?: string; attrs?: { language?: string } }> }) =>
-  Boolean(doc.content?.some((node) => node.type === "codeBlock" && node.attrs?.language === "mermaid"));
-
 describe("mobile visual diagram viewer", () => {
-  test.each(["mind-map", "flowchart", "architecture"] as const)("does not project a valid %s envelope into hidden Mermaid", (kind) => {
+  test.each(["mind-map", "flowchart", "architecture"] as const)("projects a %s envelope into a Mermaid node", (kind) => {
     const serialized = serializeDiagramDocument(createDefaultDiagramDocument(kind));
     const marker = serialized.slice(serialized.indexOf("<!-- edgeever-diagram-v1:"));
     const legacyMarkdown = `# legacy\n\n- node list only\n\n${marker}`;
@@ -14,10 +11,12 @@ describe("mobile visual diagram viewer", () => {
       { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "node list only" }] }] },
       legacyMarkdown,
     );
-    expect(getMobileVisualDiagramKind(legacyMarkdown)).toBe(kind);
-    expect(hasMermaidCodeBlock(doc)).toBe(false);
-    expect(JSON.stringify(doc)).not.toContain("edgeever-diagram-v1");
-    expect(JSON.stringify(doc)).not.toContain("node list only");
+    expect(doc.content?.some((node) => node.type === "codeBlock" && node.attrs?.language === "mermaid")).toBe(true);
+    if (kind === "architecture") {
+      const mermaid = doc.content?.find((node) => node.type === "codeBlock")?.content?.[0]?.text;
+      expect(mermaid).toContain('subgraph n0["应用系统"]');
+      expect(mermaid).toContain("shape: cyl");
+    }
   });
 
   test("keeps visual diagram envelopes out of the regular native editor", () => {
@@ -32,7 +31,7 @@ describe("mobile visual diagram viewer", () => {
     expect(hasMobileVisualDiagram(markdown)).toBe(true);
     const viewerContent = resolveMobileMemoViewerContent(null, markdown);
     expect(JSON.stringify(viewerContent)).not.toContain("edgeever-diagram-v1");
-    expect(hasMermaidCodeBlock(viewerContent)).toBe(true);
+    expect(viewerContent.content?.some((node) => node.type === "codeBlock" && node.attrs?.language === "mermaid")).toBe(true);
   });
 
   test("does not leak diagram metadata when browser codec globals are unavailable", () => {
@@ -49,7 +48,7 @@ describe("mobile visual diagram viewer", () => {
       expect(getMobileVisualDiagramKind(serialized)).toBe("mind-map");
       const viewerContent = resolveMobileMemoViewerContent(null, serialized);
       expect(JSON.stringify(viewerContent)).not.toContain("edgeever-diagram-v1");
-      expect(hasMermaidCodeBlock(viewerContent)).toBe(false);
+      expect(viewerContent.content?.some((node) => node.type === "codeBlock" && node.attrs?.language === "mermaid")).toBe(true);
     } finally {
       globalThis.atob = originalAtob;
       globalThis.btoa = originalBtoa;

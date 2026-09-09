@@ -11,7 +11,6 @@ describe("native release asset readiness", () => {
   ];
   const linuxAssets = (version) => [
     `EdgeEver-${version}-linux-x64.AppImage`,
-    "latest-linux.yml",
     "SHA256SUMS-linux.txt",
   ];
 

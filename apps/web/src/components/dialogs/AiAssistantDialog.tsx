@@ -300,16 +300,6 @@ export const AiAssistantDialog = ({
     clearResult();
   };
 
-  const handleComposerChange = (value: string) => {
-    customInstructionEditedRef.current = true;
-    if (!initializedForOpen) {
-      setSelectedPromptId(null);
-      setAction("custom");
-    }
-    setCustomInstruction(value);
-    clearResult();
-  };
-
   const runGeneration = async (
     request: Parameters<typeof api.streamAiGeneration>[0],
     { preserveOutput = false }: { preserveOutput?: boolean } = {},
@@ -469,22 +459,12 @@ export const AiAssistantDialog = ({
       parameterKind: "none",
       resultMode: "both",
     }),
-    onSuccess: ({ prompt }) => {
-      queryClient.setQueryData(
-        ["ai-prompts", i18n.resolvedLanguage],
-        (current: typeof prompts | undefined) => [
-          ...(current ?? []).filter((item) => item.id !== prompt.id),
-          prompt,
-        ],
-      );
-      setSelectedPromptId(prompt.id);
-      setAction(prompt.action);
-      customInstructionEditedRef.current = false;
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["ai-prompts"] });
       setSaveDialogOpen(false);
       setSaveName("");
       setSaveDescription("");
       setPromptFeedback(t("aiAssistant.promptSaved"));
-      void queryClient.invalidateQueries({ queryKey: ["ai-prompts"] });
     },
   });
 
@@ -742,10 +722,14 @@ export const AiAssistantDialog = ({
                   className="min-h-24 resize-y rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
                   value={customInstruction}
                   onChange={(event) => {
-                    handleComposerChange(event.target.value);
+                    customInstructionEditedRef.current = true;
+                    setCustomInstruction(event.target.value);
+                    clearResult();
                   }}
                   onCompositionEnd={(event) => {
-                    handleComposerChange(event.currentTarget.value);
+                    customInstructionEditedRef.current = true;
+                    setCustomInstruction(event.currentTarget.value);
+                    clearResult();
                   }}
                   onKeyDown={(event) => {
                     if (

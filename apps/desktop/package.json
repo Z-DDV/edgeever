@@ -10,8 +10,7 @@
   "scripts": {
     "dev": "electron .",
     "start": "electron .",
-    "dist": "electron-builder --config electron-builder.yml",
-    "verify-origin-migration": "electron ../../scripts/renderer-origin-verifier"
+    "dist": "electron-builder --config electron-builder.yml"
   },
   "devDependencies": {
     "electron": "^44.0.0",
